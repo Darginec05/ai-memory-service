@@ -14,6 +14,7 @@ export type RetrievedMemory = {
   confidence: number;
   sessionId: SessionId;
   turnId: TurnId | null;
+  supersedesId: MemoryId | null;
   createdAt: Date;
   updatedAt: Date;
 };

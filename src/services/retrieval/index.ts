@@ -1,12 +1,14 @@
 import { pg } from '../../db/client';
 import { openAiGateway, type LlmGateway } from '../../lib/openai';
 import { FtsSearcher } from './fts-searcher';
-import { rrfFuse } from './fusion';
-import { VectorSearcher } from './vector-searcher';
+import { normalizeScores, rrfFuse } from './fusion';
+import { DEFAULT_MAX_DISTANCE, VectorSearcher } from './vector-searcher';
 import type { RetrievalScope, RetrievedItem, ScoredItem } from './types';
 
 export type { RetrievalScope, RetrievedItem, RetrievedMemory, RetrievedMessage, ScoredItem } from './types';
 export { scopeFromRequest } from './scope';
+export { normalizeScores, rrfFuse } from './fusion';
+export { DEFAULT_MAX_DISTANCE } from './vector-searcher';
 
 const CANDIDATES_PER_BRANCH = 30;
 
@@ -17,7 +19,12 @@ export class RetrievalService {
     private readonly llm: LlmGateway,
   ) {}
 
-  async search(scope: RetrievalScope, query: string, limit: number): Promise<ScoredItem[]> {
+  async search(
+    scope: RetrievalScope,
+    query: string,
+    limit: number,
+    maxDistance: number = DEFAULT_MAX_DISTANCE,
+  ): Promise<ScoredItem[]> {
     const startedAt = Date.now();
     const queryEmbedding = await this.embedQuery(query);
 
@@ -27,19 +34,20 @@ export class RetrievalService {
     ];
 
     if (queryEmbedding) {
-      branches.push(this.vectorSearcher.searchMemories(scope, queryEmbedding, CANDIDATES_PER_BRANCH));
-      branches.push(this.vectorSearcher.searchMessages(scope, queryEmbedding, CANDIDATES_PER_BRANCH));
+      branches.push(
+        this.vectorSearcher.searchMemories(scope, queryEmbedding, CANDIDATES_PER_BRANCH, maxDistance),
+      );
+      branches.push(
+        this.vectorSearcher.searchMessages(scope, queryEmbedding, CANDIDATES_PER_BRANCH, maxDistance),
+      );
     }
 
     const rankings = await Promise.all(branches);
+    console.log(`RetrievalService [search] -> rankings`, rankings);
     const fused = rrfFuse(rankings).slice(0, limit);
+    console.log(`RetrievalService [search] -> fused`, fused);
 
-    // RRF scores live on an opaque scale (~1/61 per list hit); normalize so the
-    // contract's "score" reads as relative relevance within this result set.
-    const maxScore = fused[0]?.score;
-    const results = maxScore
-      ? fused.map((scored) => ({ item: scored.item, score: scored.score / maxScore }))
-      : fused;
+    const results = normalizeScores(fused);
 
     console.log(
       `[retrieval] scope=${scope.kind} branches=${rankings.length} fused=${results.length} embedded=${queryEmbedding !== null} took=${Date.now() - startedAt}ms`,

@@ -24,3 +24,11 @@ export function rrfFuse(rankings: ReadonlyArray<ReadonlyArray<RetrievedItem>>): 
 
   return [...fused.values()].sort((a, b) => b.score - a.score);
 }
+
+// Raw RRF scores live on an opaque scale (~1/61 per list hit); normalized, the
+// top item reads as 1.0 and the rest as relative relevance within the set.
+export function normalizeScores(scored: ScoredItem[]): ScoredItem[] {
+  const maxScore = scored[0]?.score;
+  if (!maxScore) return scored;
+  return scored.map(({ item, score }) => ({ item, score: score / maxScore }));
+}

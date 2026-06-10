@@ -13,6 +13,7 @@ export function mapMemoryRow(row: Row): RetrievedMemory {
     confidence: row.confidence as number,
     sessionId: row.session_id as SessionId,
     turnId: (row.source_turn as TurnId | null) ?? null,
+    supersedesId: (row.supersedes_id as MemoryId | null) ?? null,
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
   };

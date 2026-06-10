@@ -4,7 +4,7 @@ import { mapMemoryRow, mapMessageRow } from './row-mappers';
 import type { RetrievalScope, RetrievedMemory, RetrievedMessage } from './types';
 
 export class FtsSearcher {
-  constructor(private readonly sql: SqlClient) {}
+  constructor(private readonly sql: SqlClient) { }
 
   // websearch_to_tsquery tolerates arbitrary user input (quotes, operators, unicode)
   // without ever throwing a syntax error, unlike to_tsquery.
@@ -14,12 +14,15 @@ export class FtsSearcher {
     limit: number,
   ): Promise<RetrievedMemory[]> {
     const rows = await this.sql`
-      SELECT id, type, key, value, confidence, session_id, source_turn, created_at, updated_at
+      SELECT id, type, key, value, confidence, session_id, source_turn, supersedes_id, created_at, updated_at
       FROM memories
       WHERE active AND ${memoryScopeSql(this.sql, scope)}
         AND tsv @@ websearch_to_tsquery('simple', ${query})
       ORDER BY ts_rank(tsv, websearch_to_tsquery('simple', ${query})) DESC
       LIMIT ${limit}`;
+
+    console.log(`FtsSearcher [searchMemories] -> rows`, rows);
+
     return rows.map(mapMemoryRow);
   }
 
@@ -36,6 +39,8 @@ export class FtsSearcher {
         AND m.tsv @@ websearch_to_tsquery('simple', ${query})
       ORDER BY ts_rank(m.tsv, websearch_to_tsquery('simple', ${query})) DESC
       LIMIT ${limit}`;
+
+    console.log(`FtsSearcher [searchMessages] -> rows`, rows);
     return rows.map(mapMessageRow);
   }
 }
