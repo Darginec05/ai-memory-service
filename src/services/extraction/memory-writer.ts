@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { memories, messages } from '../../db/schema';
+import { createLogger } from '../../lib/logger';
 import {
   embeddingText,
   type Database,
@@ -7,6 +8,8 @@ import {
   type LlmGateway,
   type MemoryOp,
 } from './types';
+
+const log = createLogger('extraction');
 
 type MergeOp = Extract<MemoryOp, { kind: 'merge' }>;
 
@@ -94,10 +97,7 @@ export class MemoryWriter {
         if (embedding) mergedEmbeddingByOp.set(op, embedding);
       });
     } catch (err) {
-      console.warn(
-        '[extraction] merged-value embedding failed, falling back to candidate embeddings:',
-        err,
-      );
+      log.warn('merged-value embedding failed, falling back to candidate embeddings:', err);
     }
     return mergedEmbeddingByOp;
   }

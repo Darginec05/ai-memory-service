@@ -1,31 +1,30 @@
 import type { MemoryType, MessageRole } from '../../db/schema';
-import type { MemoryId, MessageId, SessionId, TurnId, UserId } from '../../lib/ids';
 
 export type RetrievalScope =
-  | { kind: 'user'; userId: UserId }
-  | { kind: 'session'; sessionId: SessionId };
+  | { kind: 'user'; userId: string }
+  | { kind: 'session'; sessionId: string };
 
 export type RetrievedMemory = {
   source: 'memory';
-  id: MemoryId;
+  id: string;
   type: MemoryType;
   key: string;
   value: string;
   confidence: number;
-  sessionId: SessionId;
-  turnId: TurnId | null;
-  supersedesId: MemoryId | null;
+  sessionId: string;
+  turnId: string | null;
+  supersedesId: string | null;
   createdAt: Date;
   updatedAt: Date;
 };
 
 export type RetrievedMessage = {
   source: 'message';
-  id: MessageId;
+  id: string;
   role: MessageRole;
   content: string;
-  sessionId: SessionId;
-  turnId: TurnId;
+  sessionId: string;
+  turnId: string;
   ts: Date;
 };
 

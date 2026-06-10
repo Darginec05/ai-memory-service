@@ -2,7 +2,6 @@ import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db/client';
 import { memories, type MemoryType } from '../db/schema';
-import { asUserId } from '../lib/ids';
 
 type MemoryDto = {
   id: string;
@@ -25,7 +24,7 @@ type MemoriesResponse = {
 export const memoriesRoute = new Hono();
 
 memoriesRoute.get('/users/:user_id/memories', async (c) => {
-  const userId = asUserId(c.req.param('user_id'));
+  const userId = c.req.param('user_id');
 
   const rows = await db
     .select()

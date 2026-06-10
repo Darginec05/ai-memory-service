@@ -1,4 +1,5 @@
 import { pg } from '../../db/client';
+import { createLogger } from '../../lib/logger';
 import { openAiGateway } from '../../lib/openai';
 import {
   normalizeScores,
@@ -14,6 +15,8 @@ import { Reranker } from './reranker';
 import type { AssembledRecall } from './types';
 
 export type { AssembledRecall, Citation } from './types';
+
+const log = createLogger('recall');
 
 const RECALL_CANDIDATES = 24;
 const MAX_QUERY_VARIANTS = 4;
@@ -46,17 +49,15 @@ export class RecallService {
       queries.map((q) => this.retrieval.search(scope, q, RECALL_CANDIDATES, RECALL_MAX_DISTANCE)),
     );
     const candidates = this.fuseAcrossQueries(perQuery);
-    
-    console.log(`RecallService [recall] -> candidates`, candidates);
+    log.debug('fused candidates:', candidates);
 
     const kept = await this.reranker.rerank(query, candidates);
-
-    console.log(`RecallService [recall] -> kept`, kept);
+    log.debug('kept after rerank:', kept);
 
     const assembled = await this.assembler.assemble(kept, maxTokens);
 
-    console.log(
-      `[recall] queries=${queries.length} candidates=${candidates.length} kept=${kept.length} took=${Date.now() - startedAt}ms`,
+    log.info(
+      `queries=${queries.length} candidates=${candidates.length} kept=${kept.length} took=${Date.now() - startedAt}ms`,
     );
     return assembled;
   }

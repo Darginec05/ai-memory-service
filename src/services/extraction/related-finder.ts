@@ -1,6 +1,8 @@
 import type { MemoryType } from '../../db/schema';
-import type { MemoryId, SessionId, UserId } from '../../lib/ids';
+import { createLogger } from '../../lib/logger';
 import type { RelatedMemory, SqlClient } from './types';
+
+const log = createLogger('extraction');
 
 const RELATED_LIMIT = 8;
 const RELATED_DISTANCE_THRESHOLD = 0.55;
@@ -11,8 +13,8 @@ export class RelatedMemoryFinder {
   // Hybrid lookup: exact key match catches stable topics, the embedding fallback
   // catches the same topic under a differently-minted key (observed in v1 testing).
   async findRelated(
-    userId: UserId | null,
-    sessionId: SessionId,
+    userId: string | null,
+    sessionId: string,
     key: string,
     embedding: number[],
   ): Promise<RelatedMemory[]> {
@@ -32,8 +34,10 @@ export class RelatedMemoryFinder {
       ORDER BY CASE WHEN key = ${key} THEN 0 ELSE 1 END, embedding <=> ${vec}::vector
       LIMIT ${RELATED_LIMIT}`;
 
+    log.debug(`related memories for key=${key}:`, rows);
+
     return rows.map((row) => ({
-      id: row.id as MemoryId,
+      id: row.id as string,
       type: row.type as MemoryType,
       key: row.key as string,
       value: row.value as string,

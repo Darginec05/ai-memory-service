@@ -1,5 +1,8 @@
 import { z } from 'zod';
+import { createLogger } from '../../lib/logger';
 import type { LlmGateway } from './types';
+
+const log = createLogger('recall');
 
 const MAX_REWRITES = 3;
 // Oversized payload guard: keeps a pathological query from bloating the LLM call.
@@ -43,10 +46,10 @@ export class QueryRewriter {
         schema: REWRITE_JSON_SCHEMA,
       });
 
-      console.log(`QueryRewriter [rewrite] -> raw`, raw);
+      log.debug('rewrite response:', raw);
       return rewriteResultSchema.parse(raw).queries.slice(0, MAX_REWRITES);
     } catch (err) {
-      console.warn('[recall] query rewriting failed, searching raw query only:', err);
+      log.warn('query rewriting failed, searching raw query only:', err);
       return [];
     }
   }

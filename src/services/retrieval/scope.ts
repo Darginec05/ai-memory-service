@@ -1,6 +1,5 @@
 import type { Fragment } from 'postgres';
 import type { SqlClient } from '../../db/client';
-import { asSessionId, asUserId } from '../../lib/ids';
 import type { RetrievalScope } from './types';
 
 // user_id present -> user-scoped (cross-session by design, documented in README);
@@ -9,8 +8,8 @@ export function scopeFromRequest(
   userId: string | null | undefined,
   sessionId: string | null | undefined,
 ): RetrievalScope | null {
-  if (userId) return { kind: 'user', userId: asUserId(userId) };
-  if (sessionId) return { kind: 'session', sessionId: asSessionId(sessionId) };
+  if (userId) return { kind: 'user', userId };
+  if (sessionId) return { kind: 'session', sessionId };
   return null;
 }
 

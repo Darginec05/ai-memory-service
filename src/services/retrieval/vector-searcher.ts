@@ -1,7 +1,10 @@
 import type { SqlClient } from '../../db/client';
+import { createLogger } from '../../lib/logger';
 import { mapMemoryRow, mapMessageRow } from './row-mappers';
 import { memoryScopeSql, messageScopeSql } from './scope';
 import type { RetrievalScope, RetrievedMemory, RetrievedMessage } from './types';
+
+const log = createLogger('retrieval');
 
 // Cosine distance above this is noise for text-embedding-3-small: returning
 // "nearest of nothing relevant" is how hallucinated recall happens. Callers
@@ -26,6 +29,7 @@ export class VectorSearcher {
         AND embedding <=> ${vec}::vector < ${maxDistance}
       ORDER BY embedding <=> ${vec}::vector
       LIMIT ${limit}`;
+    log.debug(`vector memories rows (by distance, cutoff ${maxDistance}):`, rows);
     return rows.map(mapMemoryRow);
   }
 
@@ -45,6 +49,7 @@ export class VectorSearcher {
         AND m.embedding <=> ${vec}::vector < ${maxDistance}
       ORDER BY m.embedding <=> ${vec}::vector
       LIMIT ${limit}`;
+    log.debug(`vector messages rows (by distance, cutoff ${maxDistance}):`, rows);
     return rows.map(mapMessageRow);
   }
 }

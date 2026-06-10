@@ -1,10 +1,13 @@
 import OpenAI from 'openai';
 import { config } from '../config';
+import { createLogger } from './logger';
 
 export const EMBEDDING_MODEL = 'text-embedding-3-small';
 export const COMPLETION_MODEL = 'gpt-4o-mini';
 
 const MAX_EMBED_INPUT_CHARS = 8000;
+
+const log = createLogger('openai');
 
 export class LlmUnavailableError extends Error {
   constructor() {
@@ -22,12 +25,17 @@ function getClient(): OpenAI {
 }
 
 async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  const startedAt = Date.now();
   try {
-    return await fn();
+    const result = await fn();
+    log.debug(`${label} took=${Date.now() - startedAt}ms`);
+    return result;
   } catch (err) {
     if (err instanceof LlmUnavailableError) throw err;
-    console.warn(`[openai] ${label} failed, retrying once:`, err);
-    return fn();
+    log.warn(`${label} failed, retrying once:`, err);
+    const result = await fn();
+    log.debug(`${label} took=${Date.now() - startedAt}ms (after retry)`);
+    return result;
   }
 }
 

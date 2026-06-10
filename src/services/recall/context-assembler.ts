@@ -1,5 +1,8 @@
+import { createLogger } from '../../lib/logger';
 import type { ScoredItem } from '../retrieval';
 import type { AssembledRecall, Citation, SqlClient } from './types';
+
+const log = createLogger('recall');
 
 const SNIPPET_CHAR_LIMIT = 200;
 const FACTS_HEADER = '## Known facts about this user';
@@ -76,6 +79,10 @@ export class ContextAssembler {
     if (conversationLines.length > 0) {
       sections.push(`${CONVERSATION_HEADER}\n${conversationLines.join('\n')}`);
     }
+
+    log.debug(
+      `assembled facts=${factLines.length} snippets=${conversationLines.length} tokens≈${usedTokens}/${maxTokens}`,
+    );
 
     return { context: sections.join('\n\n'), citations };
   }

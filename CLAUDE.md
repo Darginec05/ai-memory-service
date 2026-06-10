@@ -28,7 +28,6 @@ When writing code, follow:
   - `as const` for literal lookup tables; never magic strings.
   - Discriminated unions over boolean-flag soup.
   - No `enum`. Use `as const` objects with `keyof typeof` (`const enum` is banned by `isolatedModules`).
-  - Branded types for IDs (`type UnitId = string & { readonly __brand: "UnitId" }`).
   - Explicit return types on every exported function.
   - Top-level imports only — no dynamic `require`.
   - All async code returns `Promise<T>` with `T` named explicitly on exports.

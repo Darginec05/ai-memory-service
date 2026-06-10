@@ -1,19 +1,18 @@
 import type { Row } from 'postgres';
 import type { MemoryType, MessageRole } from '../../db/schema';
-import type { MemoryId, MessageId, SessionId, TurnId } from '../../lib/ids';
 import type { RetrievedMemory, RetrievedMessage } from './types';
 
 export function mapMemoryRow(row: Row): RetrievedMemory {
   return {
     source: 'memory',
-    id: row.id as MemoryId,
+    id: row.id as string,
     type: row.type as MemoryType,
     key: row.key as string,
     value: row.value as string,
     confidence: row.confidence as number,
-    sessionId: row.session_id as SessionId,
-    turnId: (row.source_turn as TurnId | null) ?? null,
-    supersedesId: (row.supersedes_id as MemoryId | null) ?? null,
+    sessionId: row.session_id as string,
+    turnId: (row.source_turn as string | null) ?? null,
+    supersedesId: (row.supersedes_id as string | null) ?? null,
     createdAt: toDate(row.created_at),
     updatedAt: toDate(row.updated_at),
   };
@@ -22,11 +21,11 @@ export function mapMemoryRow(row: Row): RetrievedMemory {
 export function mapMessageRow(row: Row): RetrievedMessage {
   return {
     source: 'message',
-    id: row.id as MessageId,
+    id: row.id as string,
     role: row.role as MessageRole,
     content: row.content as string,
-    sessionId: row.session_id as SessionId,
-    turnId: row.turn_id as TurnId,
+    sessionId: row.session_id as string,
+    turnId: row.turn_id as string,
     ts: toDate(row.ts),
   };
 }

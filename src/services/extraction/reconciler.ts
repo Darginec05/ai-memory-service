@@ -1,10 +1,13 @@
 import { z } from 'zod';
+import { createLogger } from '../../lib/logger';
 import {
   RECONCILIATION_JSON_SCHEMA,
   RECONCILIATION_SYSTEM,
   buildReconciliationUserMessage,
 } from './prompts';
 import type { Candidate, LlmGateway, MemoryOp, RelatedMemory } from './types';
+
+const log = createLogger('extraction');
 
 const decisionSchema = z.object({
   candidate_index: z.number().int().min(0),
@@ -64,6 +67,11 @@ export class Reconciler {
 
       // An invalid or missing target degrades to "add" — never drop knowledge.
       if (decision.action === 'add' || !target) {
+        if (decision.action !== 'add') {
+          log.warn(
+            `reconciliation returned unknown existing_id=${decision.existing_id} for action=${decision.action}, degrading to add (key=${candidate.key})`,
+          );
+        }
         ops.push({ kind: 'add', candidate, embedding });
         continue;
       }
@@ -92,10 +100,17 @@ export class Reconciler {
     }
 
     // Candidates the LLM forgot to decide on are still knowledge — add them.
+    let undecided = 0;
     for (let i = 0; i < candidates.length; i++) {
       if (decidedIndexes.has(i)) continue;
       const op = addOp(i);
-      if (op) ops.push(op);
+      if (op) {
+        ops.push(op);
+        undecided += 1;
+      }
+    }
+    if (undecided > 0) {
+      log.warn(`reconciliation left ${undecided} candidate(s) undecided, added as-is`);
     }
 
     return ops;

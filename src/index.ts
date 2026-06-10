@@ -2,18 +2,21 @@ import { serve } from '@hono/node-server';
 import { createApp } from './app';
 import { config } from './config';
 import { applySchema, closeDb } from './db/client';
+import { createLogger } from './lib/logger';
+
+const log = createLogger('boot');
 
 async function main() {
   await applySchema();
-  console.log('[boot] schema applied');
+  log.info('schema applied');
 
   const app = createApp();
   const server = serve({ fetch: app.fetch, port: config.port }, (info) => {
-    console.log(`[boot] memory-service listening on :${info.port}`);
+    log.info(`memory-service listening on :${info.port}`);
   });
 
   const shutdown = async () => {
-    console.log('[shutdown] closing');
+    log.info('shutting down');
     server.close();
     await closeDb();
     process.exit(0);
@@ -23,6 +26,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('[boot] fatal:', err);
+  log.error('fatal:', err);
   process.exit(1);
 });

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeScores, rrfFuse } from '../../src/services/retrieval/fusion';
-import type { MemoryId, MessageId } from '../../src/lib/ids';
 import { memoryItem, messageItem } from './fakes';
 
 describe('rrfFuse', () => {
@@ -36,8 +35,8 @@ describe('rrfFuse', () => {
   });
 
   it('does not collapse a memory and a message sharing the same raw id', () => {
-    const memory = memoryItem({ id: 'same-id' as MemoryId });
-    const message = messageItem({ id: 'same-id' as MessageId });
+    const memory = memoryItem({ id: 'same-id' });
+    const message = messageItem({ id: 'same-id' });
     expect(rrfFuse([[memory], [message]])).toHaveLength(2);
   });
 });

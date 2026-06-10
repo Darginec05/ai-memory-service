@@ -1,6 +1,9 @@
 import { z } from 'zod';
+import { createLogger } from '../../lib/logger';
 import type { ScoredItem } from '../retrieval';
 import type { LlmGateway } from './types';
+
+const log = createLogger('recall');
 
 const RERANK_SNIPPET_CHARS = 300;
 // Oversized payload guard: keeps a pathological query from bloating the LLM call.
@@ -36,13 +39,14 @@ export class Reranker {
   async rerank(question: string, candidates: ScoredItem[]): Promise<ScoredItem[]> {
     if (candidates.length === 0) return [];
 
-    console.log(`Reranker [rerank] -> buildRerankUserMessage(question, candidates)`, buildRerankUserMessage(question, candidates));
+    const userMessage = buildRerankUserMessage(question, candidates);
+    log.debug('rerank prompt:', userMessage);
 
     try {
       const raw = await this.llm.completeStructured({
         label: 'rerank',
         system: RERANK_SYSTEM,
-        user: buildRerankUserMessage(question, candidates),
+        user: userMessage,
         schemaName: 'rerank_selection',
         schema: RERANK_JSON_SCHEMA,
       });
@@ -58,7 +62,7 @@ export class Reranker {
       }
       return kept;
     } catch (err) {
-      console.warn('[recall] rerank failed, keeping fused order:', err);
+      log.warn('rerank failed, keeping fused order:', err);
       return candidates;
     }
   }

@@ -1,8 +1,15 @@
-import { describe, expect, it } from 'vitest';
-import type { MemoryId } from '../../src/lib/ids';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { Reconciler } from '../../src/services/extraction/reconciler';
 import type { Candidate, RelatedMemory } from '../../src/services/extraction/types';
 import { fakeLlm } from './fakes';
+
+// Degradation paths (invalid target, undecided candidates) warn by design.
+beforeAll(() => {
+  vi.spyOn(console, 'warn').mockImplementation(() => {});
+});
+afterAll(() => {
+  vi.restoreAllMocks();
+});
 
 function candidate(overrides: Partial<Candidate> = {}): Candidate {
   return { type: 'fact', key: 'job', value: 'User works at Notion.', confidence: 0.9, ...overrides };
@@ -10,7 +17,7 @@ function candidate(overrides: Partial<Candidate> = {}): Candidate {
 
 function related(overrides: Partial<RelatedMemory> = {}): RelatedMemory {
   return {
-    id: 'm1' as MemoryId,
+    id: 'm1',
     type: 'fact',
     key: 'job',
     value: 'User works at Stripe.',

@@ -1,7 +1,6 @@
 import { and, desc, eq, ne } from 'drizzle-orm';
 import { z } from 'zod';
 import { messages, turns } from '../../db/schema';
-import type { SessionId, TurnId } from '../../lib/ids';
 import { EXTRACTION_JSON_SCHEMA, EXTRACTION_SYSTEM, buildExtractionUserMessage } from './prompts';
 import {
   candidateSchema,
@@ -27,8 +26,8 @@ export class CandidateExtractor {
   ) {}
 
   async extract(
-    sessionId: SessionId,
-    turnId: TurnId,
+    sessionId: string,
+    turnId: string,
     turnMessages: ReadonlyArray<ExtractionMessage>,
   ): Promise<Candidate[]> {
     const recentContext = await this.loadRecentContext(sessionId, turnId);
@@ -50,7 +49,7 @@ export class CandidateExtractor {
 
   // Earlier session messages give the LLM coreference context ("she", "the new job")
   // without shipping the whole history into the prompt.
-  private async loadRecentContext(sessionId: SessionId, currentTurnId: TurnId): Promise<string> {
+  private async loadRecentContext(sessionId: string, currentTurnId: string): Promise<string> {
     const rows = await this.db
       .select({ role: messages.role, content: messages.content })
       .from(messages)

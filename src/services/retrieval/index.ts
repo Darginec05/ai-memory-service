@@ -1,4 +1,5 @@
 import { pg } from '../../db/client';
+import { createLogger } from '../../lib/logger';
 import { openAiGateway, type LlmGateway } from '../../lib/openai';
 import { FtsSearcher } from './fts-searcher';
 import { normalizeScores, rrfFuse } from './fusion';
@@ -9,6 +10,8 @@ export type { RetrievalScope, RetrievedItem, RetrievedMemory, RetrievedMessage, 
 export { scopeFromRequest } from './scope';
 export { normalizeScores, rrfFuse } from './fusion';
 export { DEFAULT_MAX_DISTANCE } from './vector-searcher';
+
+const log = createLogger('retrieval');
 
 const CANDIDATES_PER_BRANCH = 30;
 
@@ -43,14 +46,14 @@ export class RetrievalService {
     }
 
     const rankings = await Promise.all(branches);
-    console.log(`RetrievalService [search] -> rankings`, rankings);
+    log.debug('branch rankings:', rankings);
     const fused = rrfFuse(rankings).slice(0, limit);
-    console.log(`RetrievalService [search] -> fused`, fused);
+    log.debug('fused:', fused);
 
     const results = normalizeScores(fused);
 
-    console.log(
-      `[retrieval] scope=${scope.kind} branches=${rankings.length} fused=${results.length} embedded=${queryEmbedding !== null} took=${Date.now() - startedAt}ms`,
+    log.info(
+      `scope=${scope.kind} branches=${rankings.length} fused=${results.length} embedded=${queryEmbedding !== null} took=${Date.now() - startedAt}ms`,
     );
     return results;
   }
@@ -62,7 +65,7 @@ export class RetrievalService {
       const embeddings = await this.llm.embedTexts([query]);
       return embeddings[0] ?? null;
     } catch (err) {
-      console.warn('[retrieval] query embedding failed, falling back to FTS only:', err);
+      log.warn('query embedding failed, falling back to FTS only:', err);
       return null;
     }
   }

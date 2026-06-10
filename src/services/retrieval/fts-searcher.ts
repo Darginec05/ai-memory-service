@@ -1,7 +1,10 @@
 import type { SqlClient } from '../../db/client';
+import { createLogger } from '../../lib/logger';
 import { memoryScopeSql, messageScopeSql } from './scope';
 import { mapMemoryRow, mapMessageRow } from './row-mappers';
 import type { RetrievalScope, RetrievedMemory, RetrievedMessage } from './types';
+
+const log = createLogger('retrieval');
 
 export class FtsSearcher {
   constructor(private readonly sql: SqlClient) { }
@@ -21,8 +24,7 @@ export class FtsSearcher {
       ORDER BY ts_rank(tsv, websearch_to_tsquery('simple', ${query})) DESC
       LIMIT ${limit}`;
 
-    console.log(`FtsSearcher [searchMemories] -> rows`, rows);
-
+    log.debug('FTS memories rows:', rows);
     return rows.map(mapMemoryRow);
   }
 
@@ -40,7 +42,7 @@ export class FtsSearcher {
       ORDER BY ts_rank(m.tsv, websearch_to_tsquery('simple', ${query})) DESC
       LIMIT ${limit}`;
 
-    console.log(`FtsSearcher [searchMessages] -> rows`, rows);
+    log.debug('FTS messages rows:', rows);
     return rows.map(mapMessageRow);
   }
 }

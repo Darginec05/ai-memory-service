@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { db } from '../db/client';
 import { MESSAGE_ROLES, messages, turns } from '../db/schema';
 import { readJson } from '../lib/http';
-import { asSessionId, asUserId, type MessageId, type TurnId } from '../lib/ids';
+import { createLogger } from '../lib/logger';
 import { LlmUnavailableError } from '../lib/openai';
 import { extractionService, type ExtractTurnInput } from '../services/extraction';
 
@@ -21,13 +21,15 @@ const turnSchema = z.object({
   metadata: z.record(z.unknown()).optional(),
 });
 
+const log = createLogger('turns');
+
 type CreateTurnResponse = {
   id: string;
 };
 
 type PersistedTurn = {
-  turnId: TurnId;
-  messageIds: MessageId[];
+  turnId: string;
+  messageIds: string[];
 };
 
 function parseTimestamp(value: string | undefined): Date {
@@ -42,8 +44,8 @@ turnsRoute.post('/turns', async (c) => {
   const body = await readJson(c, turnSchema);
   if (!body.ok) return body.res;
   const turn = body.data;
-  const sessionId = asSessionId(turn.session_id);
-  const userId = turn.user_id ? asUserId(turn.user_id) : null;
+  const sessionId = turn.session_id;
+  const userId = turn.user_id ?? null;
 
   const persisted: PersistedTurn = await db.transaction(async (tx) => {
     const [insertedTurn] = await tx
@@ -90,9 +92,9 @@ turnsRoute.post('/turns', async (c) => {
     await extractionService.processTurn(extractionInput);
   } catch (err) {
     if (err instanceof LlmUnavailableError) {
-      console.warn(`[extraction] skipped for turn=${persisted.turnId}: ${err.message}`);
+      log.warn(`extraction skipped for turn=${persisted.turnId}: ${err.message}`);
     } else {
-      console.error(`[extraction] failed for turn=${persisted.turnId}:`, err);
+      log.error(`extraction failed for turn=${persisted.turnId}:`, err);
     }
   }
 

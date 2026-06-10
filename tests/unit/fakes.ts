@@ -1,5 +1,4 @@
 import type { SqlClient } from '../../src/db/client';
-import { asSessionId, asTurnId, type MemoryId, type MessageId } from '../../src/lib/ids';
 import type { LlmGateway, StructuredCallArgs } from '../../src/lib/openai';
 import type { RetrievedMemory, RetrievedMessage } from '../../src/services/retrieval/types';
 
@@ -39,13 +38,13 @@ export function memoryItem(overrides: Partial<RetrievedMemory> = {}): RetrievedM
   seq += 1;
   return {
     source: 'memory',
-    id: `mem-${seq}` as MemoryId,
+    id: `mem-${seq}`,
     type: 'fact',
     key: 'location.city',
     value: 'User lives in Bergen.',
     confidence: 0.9,
-    sessionId: asSessionId('s1'),
-    turnId: asTurnId(`turn-${seq}`),
+    sessionId: 's1',
+    turnId: `turn-${seq}`,
     supersedesId: null,
     createdAt: new Date('2026-01-01T00:00:00Z'),
     updatedAt: new Date('2026-01-02T00:00:00Z'),
@@ -57,11 +56,11 @@ export function messageItem(overrides: Partial<RetrievedMessage> = {}): Retrieve
   seq += 1;
   return {
     source: 'message',
-    id: `msg-${seq}` as MessageId,
+    id: `msg-${seq}`,
     role: 'user',
     content: 'I moved to Bergen last month.',
-    sessionId: asSessionId('s1'),
-    turnId: asTurnId(`turn-${seq}`),
+    sessionId: 's1',
+    turnId: `turn-${seq}`,
     ts: new Date('2026-01-02T00:00:00Z'),
     ...overrides,
   };

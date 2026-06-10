@@ -1,4 +1,5 @@
 import { db, pg } from '../../db/client';
+import { createLogger } from '../../lib/logger';
 import { openAiGateway } from '../../lib/openai';
 import { CandidateExtractor } from './candidate-extractor';
 import { MemoryWriter } from './memory-writer';
@@ -13,6 +14,8 @@ import {
 } from './types';
 
 export type { ExtractTurnInput } from './types';
+
+const log = createLogger('extraction');
 
 export class ExtractionService {
   constructor(
@@ -32,7 +35,7 @@ export class ExtractionService {
       input.messages,
     );
 
-    console.log(`ExtractionService [processTurn] -> candidates`, candidates);
+    log.debug('candidates:', candidates);
 
     // Messages and candidates share one embeddings call to save a round-trip.
     const messageTexts = input.messages.map((m) => m.content);
@@ -53,8 +56,8 @@ export class ExtractionService {
 
     await this.memoryWriter.write(input, messageEmbeddings, ops);
 
-    console.log(
-      `[extraction] turn=${input.turnId} candidates=${candidates.length} took=${Date.now() - startedAt}ms ops:`,
+    log.info(
+      `turn=${input.turnId} candidates=${candidates.length} took=${Date.now() - startedAt}ms ops:`,
       ops.map(describeOp),
     );
   }

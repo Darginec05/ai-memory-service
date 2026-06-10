@@ -1,6 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import type { MemoryId } from '../../src/lib/ids';
-import { asTurnId } from '../../src/lib/ids';
 import { ContextAssembler } from '../../src/services/recall/context-assembler';
 import { fakeSql, memoryItem, messageItem } from './fakes';
 
@@ -38,7 +36,7 @@ describe('ContextAssembler.assemble', () => {
     );
     const fact = memoryItem({
       value: 'User lives in Bergen.',
-      supersedesId: 'old-1' as MemoryId,
+      supersedesId: 'old-1',
     });
     const { context } = await assembler.assemble([{ item: fact, score: 1 }], 1024);
     expect(context).toContain(
@@ -48,7 +46,7 @@ describe('ContextAssembler.assemble', () => {
 
   it('suppresses raw messages from a turn already distilled into a kept fact', async () => {
     const assembler = new ContextAssembler(fakeSql());
-    const turnId = asTurnId('turn-shared');
+    const turnId = 'turn-shared';
     const fact = memoryItem({ turnId, value: 'Meeting is on July 8.' });
     const msg = messageItem({ turnId, content: 'on July 3rd... no wait, the 8th' });
     const { context, citations } = await assembler.assemble(
@@ -66,7 +64,7 @@ describe('ContextAssembler.assemble', () => {
 
   it('keeps suppressing a turn even when its fact did not fit the budget', async () => {
     const assembler = new ContextAssembler(fakeSql());
-    const turnId = asTurnId('turn-shared');
+    const turnId = 'turn-shared';
     const oversizedFact = memoryItem({ turnId, value: 'a'.repeat(400) });
     const leakyMessage = messageItem({ turnId, content: 'Hi' });
     const tight = await assembler.assemble(
