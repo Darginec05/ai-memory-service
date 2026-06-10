@@ -20,7 +20,8 @@ CREATE TABLE IF NOT EXISTS messages (
   name text,
   content text NOT NULL,
   embedding vector(1536),
-  tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', content)) STORED
+  -- 'simple' config: language-neutral tokenization (content arrives in any language)
+  tsv tsvector GENERATED ALWAYS AS (to_tsvector('simple', content)) STORED
 );
 
 CREATE INDEX IF NOT EXISTS messages_turn_idx ON messages (turn_id);
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS memories (
   supersedes_id uuid REFERENCES memories(id),
   active boolean NOT NULL DEFAULT true,
   embedding vector(1536),
-  tsv tsvector GENERATED ALWAYS AS (to_tsvector('english', key || ' ' || value)) STORED,
+  tsv tsvector GENERATED ALWAYS AS (to_tsvector('simple', key || ' ' || value)) STORED,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

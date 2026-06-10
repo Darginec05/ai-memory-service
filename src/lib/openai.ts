@@ -49,6 +49,11 @@ export type StructuredCallArgs = {
   schema: Record<string, unknown>;
 };
 
+export interface LlmGateway {
+  completeStructured(args: StructuredCallArgs): Promise<unknown>;
+  embedTexts(texts: string[]): Promise<number[][]>;
+}
+
 export async function completeStructured(args: StructuredCallArgs): Promise<unknown> {
   const res = await withRetry(args.label, () =>
     getClient().chat.completions.create({
@@ -68,3 +73,5 @@ export async function completeStructured(args: StructuredCallArgs): Promise<unkn
   if (!content) throw new Error(`[openai] ${args.label}: empty completion`);
   return JSON.parse(content) as unknown;
 }
+
+export const openAiGateway: LlmGateway = { completeStructured, embedTexts };

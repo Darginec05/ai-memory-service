@@ -2,6 +2,16 @@
 
 One entry per significant design iteration: what changed, why, what was observed, what's next.
 
+## v3 — Hybrid retrieval core (pgvector + FTS + RRF) behind /search and interim /recall
+
+**What changed:** New `src/services/retrieval/` (same class-service pattern): `VectorSearcher` (cosine over memories + messages, distance cutoff 0.6), `FtsSearcher` (`websearch_to_tsquery` over generated `tsv` columns), `rrfFuse` (reciprocal rank fusion, k=60, pure function), `RetrievalService` orchestrating 4 parallel branches (2 corpora × 2 methods, top-30 each). `/search` returns fused structured results (memories carry type/key/confidence in metadata, messages carry role/turn). `/recall` got an interim assembly: facts section first, then conversation snippets, under a `max_tokens × 4` char budget. Also: `tsv` columns migrated from the `'english'` FTS config to `'simple'` (language-neutral tokenization; queries arrive in Russian/Japanese too) with an idempotent in-bootstrap migration for existing volumes.
+
+**Why:** Rank-based fusion (RRF) avoids calibrating cosine distance against `ts_rank` — incomparable scales are the reason weighted-sum hybrids are fragile. The vector distance cutoff exists because "nearest of nothing relevant" is exactly how hallucinated recall happens on noise queries. Two corpora because a fact may fail extraction yet live in raw messages. Found en route: drizzle's postgres-js adapter disables the client's native timestamp parsers, so raw-SQL rows return timestamptz as strings — centralized row mapping with date normalization in `row-mappers.ts`.
+
+**Result:** Self-eval: **0% → 88% (14/16 fact groups)**, empty-context probes 3/3, 1 forbidden-term violation. Failure analysis: (1) `websearch_to_tsquery` ANDs every token and `'simple'` keeps stopwords, so the FTS branch returns nothing for natural-language questions — it only fires on keyword-style queries (its actual job: names like "Жужа", "Maren"); (2) cross-lingual gap — Russian query vs English-valued memory lands above the 0.6 distance cutoff ("Какие хобби?" → empty context despite `hobby.calligraphy` existing); (3) the correction violation: memories store only the corrected date, but a raw message snippet quoted in context carries both the wrong and corrected date.
+
+**Next:** Real `/recall` pipeline: LLM query rewriting (declarative, English-normalized, decomposed for multi-hop) feeding the same hybrid core, LLM rerank that also drops raw snippets already covered by facts, supersession-aware rendering ("previously …"). All three observed failures should fall out of rewriting + rerank without touching the noise-guarding distance cutoff.
+
 ## v2.1 — Extraction split into injectable class services
 
 **What changed:** `src/services/extraction/index.ts` (~340 lines, five responsibilities) split into class services with constructor-injected dependencies: `CandidateExtractor` (session context + LLM extraction), `RelatedMemoryFinder` (key ∪ cosine lookup), `Reconciler` (add/reinforce/supersede/merge decisions), `MemoryWriter` (transactional apply), orchestrated by `ExtractionService`; shared types and the `LlmGateway` interface live in `types.ts`. No DI framework — dependencies are wired explicitly in a composition root at the bottom of `index.ts`.

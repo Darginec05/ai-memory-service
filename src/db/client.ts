@@ -11,6 +11,9 @@ export const pg = postgres(config.databaseUrl, {
 
 export const db = drizzle(pg, { schema });
 
+export type SqlClient = typeof pg;
+export type Database = typeof db;
+
 export async function applySchema(): Promise<void> {
   const ddl = await readFile(new URL('./bootstrap.sql', import.meta.url), 'utf8');
   await pg.unsafe(ddl);

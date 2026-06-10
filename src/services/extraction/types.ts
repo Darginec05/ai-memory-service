@@ -1,18 +1,9 @@
 import { z } from 'zod';
-// import type keeps db/client out of the runtime graph — unit tests can import
-// these types without instantiating the Postgres client.
-import type { db, pg } from '../../db/client';
 import { MEMORY_TYPES, type MemoryType, type MessageRole } from '../../db/schema';
 import type { MemoryId, MessageId, SessionId, TurnId, UserId } from '../../lib/ids';
-import type { StructuredCallArgs } from '../../lib/openai';
 
-export type Database = typeof db;
-export type SqlClient = typeof pg;
-
-export interface LlmGateway {
-  completeStructured(args: StructuredCallArgs): Promise<unknown>;
-  embedTexts(texts: string[]): Promise<number[][]>;
-}
+export type { Database, SqlClient } from '../../db/client';
+export type { LlmGateway } from '../../lib/openai';
 
 export const candidateSchema = z.object({
   type: z.enum(MEMORY_TYPES),

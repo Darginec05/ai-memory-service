@@ -1,5 +1,5 @@
 import { db, pg } from '../../db/client';
-import { completeStructured, embedTexts } from '../../lib/openai';
+import { openAiGateway } from '../../lib/openai';
 import { CandidateExtractor } from './candidate-extractor';
 import { MemoryWriter } from './memory-writer';
 import { Reconciler } from './reconciler';
@@ -32,7 +32,7 @@ export class ExtractionService {
       input.messages,
     );
 
-    console.log(`[processTurn] candidates`, candidates);
+    console.log(`ExtractionService [processTurn] -> candidates`, candidates);
 
     // Messages and candidates share one embeddings call to save a round-trip.
     const messageTexts = input.messages.map((m) => m.content);
@@ -70,12 +70,10 @@ function describeOp(op: MemoryOp): OpSummary {
     : { kind: op.kind, key: op.candidate.key, value: op.candidate.value };
 }
 
-const llmGateway: LlmGateway = { completeStructured, embedTexts };
-
 export const extractionService = new ExtractionService(
-  new CandidateExtractor(db, llmGateway),
+  new CandidateExtractor(db, openAiGateway),
   new RelatedMemoryFinder(pg),
-  new Reconciler(llmGateway),
-  new MemoryWriter(db, llmGateway),
-  llmGateway,
+  new Reconciler(openAiGateway),
+  new MemoryWriter(db, openAiGateway),
+  openAiGateway,
 );
