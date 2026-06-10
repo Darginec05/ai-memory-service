@@ -5,6 +5,9 @@ services:
       POSTGRES_USER: memory
       POSTGRES_PASSWORD: memory
       POSTGRES_DB: memory
+    ports:
+      # exposed for local development (npm run dev); 5433 to avoid clashing with a host Postgres
+      - "5433:5432"
     volumes:
       - memory_data:/var/lib/postgresql/data
     healthcheck:
