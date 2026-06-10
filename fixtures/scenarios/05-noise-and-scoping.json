@@ -1,0 +1,65 @@
+{
+  "name": "noise-and-scoping",
+  "description": "Two checks: (1) noise resistance — probes about never-discussed topics must return empty context, not hallucinations; (2) session scoping — a session-scoped memory (user_id null) must not leak into another session.",
+  "turns": [
+    {
+      "session_id": "eval-ns-s1",
+      "user_id": "eval-u-emery",
+      "timestamp": "2026-06-03T09:00:00Z",
+      "messages": [
+        { "role": "user", "content": "I'm an accountant at a small logistics firm, and I have a pet turtle named Brick." },
+        { "role": "assistant", "content": "A turtle named Brick — solid name. How long have you had him?" }
+      ]
+    },
+    {
+      "session_id": "eval-ns-anon",
+      "user_id": null,
+      "timestamp": "2026-06-03T10:00:00Z",
+      "messages": [
+        { "role": "user", "content": "I'm training for a triathlon in September, swimming is my weakest leg." },
+        { "role": "assistant", "content": "Triathlon training is demanding — focusing on your weakest discipline is the right call." }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "What is the user's favorite football team?",
+      "session_id": "eval-ns-probe",
+      "user_id": "eval-u-emery",
+      "max_tokens": 512,
+      "expected": [],
+      "expect_empty": true
+    },
+    {
+      "query": "What programming languages does the user know?",
+      "session_id": "eval-ns-probe",
+      "user_id": "eval-u-emery",
+      "max_tokens": 512,
+      "expected": [],
+      "expect_empty": true
+    },
+    {
+      "query": "What is the user's job and does the user have pets?",
+      "session_id": "eval-ns-probe",
+      "user_id": "eval-u-emery",
+      "max_tokens": 512,
+      "expected": [["accountant"], ["turtle", "Brick"]]
+    },
+    {
+      "query": "What sport is the user training for?",
+      "session_id": "eval-ns-other-session",
+      "user_id": null,
+      "max_tokens": 512,
+      "expected": [],
+      "expect_empty": true,
+      "forbidden": ["triathlon"]
+    },
+    {
+      "query": "What sport is the user training for?",
+      "session_id": "eval-ns-anon",
+      "user_id": null,
+      "max_tokens": 512,
+      "expected": [["triathlon"]]
+    }
+  ]
+}

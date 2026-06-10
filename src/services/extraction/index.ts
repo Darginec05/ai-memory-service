@@ -96,10 +96,14 @@ export async function processTurn(input: ExtractTurnInput): Promise<void> {
   );
 
   const ops = await reconcile(candidates, candidateEmbeddings, relatedPerCandidate);
-  console.log(`[processTurn] ops`, ops.map((op) => {
-    const { embedding, ...rest } = op;
-    return rest;
-  }));
+  console.log(
+    `[extraction] turn=${input.turnId} ops:`,
+    ops.map((op) =>
+      op.kind === 'reinforce'
+        ? { kind: op.kind, targetId: op.targetId, confidence: op.confidence }
+        : { kind: op.kind, key: op.candidate.key, value: op.candidate.value },
+    ),
+  );
 
   await applyOps(input, messageEmbeddings, ops);
 

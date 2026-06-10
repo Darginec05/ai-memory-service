@@ -1,0 +1,66 @@
+{
+  "name": "fact-evolution",
+  "description": "Mutable facts (job, city) change across sessions. /recall must surface the CURRENT fact; the old one may appear only as history. Also includes a tool message that must not become a user fact.",
+  "turns": [
+    {
+      "session_id": "eval-fe-s1",
+      "user_id": "eval-u-baker",
+      "timestamp": "2026-03-02T09:00:00Z",
+      "messages": [
+        { "role": "user", "content": "I work as a line chef at a seafood restaurant downtown. The hours are brutal." },
+        { "role": "assistant", "content": "Restaurant kitchens are intense. How long have you been doing it?" }
+      ]
+    },
+    {
+      "session_id": "eval-fe-s1",
+      "user_id": "eval-u-baker",
+      "timestamp": "2026-03-02T09:10:00Z",
+      "messages": [
+        { "role": "user", "content": "Five years. Also, I'm renting a tiny place in Oslo, the rent is eating me alive." },
+        { "role": "tool", "name": "rent_index", "content": "{\"city\":\"Oslo\",\"avg_rent_1br_eur\":1450}" },
+        { "role": "assistant", "content": "Oslo rents are indeed steep — the average one-bedroom is around 1450 EUR." }
+      ]
+    },
+    {
+      "session_id": "eval-fe-s2",
+      "user_id": "eval-u-baker",
+      "timestamp": "2026-05-15T14:00:00Z",
+      "messages": [
+        { "role": "user", "content": "Life update: I quit the restaurant. I'm opening my own bakery next month — sourdough, mostly." },
+        { "role": "assistant", "content": "That's a huge step! Congratulations on the bakery." }
+      ]
+    },
+    {
+      "session_id": "eval-fe-s3",
+      "user_id": "eval-u-baker",
+      "timestamp": "2026-06-01T11:00:00Z",
+      "messages": [
+        { "role": "user", "content": "We also moved out of Oslo — found a much cheaper place in Bergen, close to the new bakery." },
+        { "role": "assistant", "content": "Bergen sounds like a fresh start on all fronts." }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "What does the user do for work?",
+      "session_id": "eval-fe-probe",
+      "user_id": "eval-u-baker",
+      "max_tokens": 512,
+      "expected": [["bakery", "baker"]]
+    },
+    {
+      "query": "Where does the user live?",
+      "session_id": "eval-fe-probe",
+      "user_id": "eval-u-baker",
+      "max_tokens": 512,
+      "expected": [["Bergen"]]
+    },
+    {
+      "query": "What kind of bread does the user's bakery focus on?",
+      "session_id": "eval-fe-probe",
+      "user_id": "eval-u-baker",
+      "max_tokens": 512,
+      "expected": [["sourdough"]]
+    }
+  ]
+}

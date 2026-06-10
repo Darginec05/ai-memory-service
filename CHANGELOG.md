@@ -2,6 +2,16 @@
 
 One entry per significant design iteration: what changed, why, what was observed, what's next.
 
+## v2 — Recall-quality fixture and self-eval baseline
+
+**What changed:** Added `fixtures/scenarios/` (5 scripted scenarios: multi-hop joins, fact evolution across sessions, gradual opinion arc, Russian/Japanese/emoji with a mid-message correction, noise + session-scoping) and `scripts/eval.ts` (`npm run eval`): cleans up, ingests via `/turns`, probes `/recall`, scores "expected fact groups found" (substring alternatives), empty-context checks for noise probes, and forbidden-term violations (hallucination/leak detection).
+
+**Why:** The fixture is the iteration loop — every retrieval change from here on gets a before/after number instead of vibes. Scenarios deliberately avoid the task doc's example domains (Berlin/Stripe/Biscuit) to keep us honest about generalization; probes are graded on alternatives ("bakery"/"baker") so phrasing variance doesn't masquerade as recall failure.
+
+**Result:** Baseline with stub `/recall`: **0/16 fact groups (0%)**, empty-context probes 3/3 (trivially — stub always returns empty), 0 violations. Ingestion side validated on all 5 scenarios (~3.9–13.7s per scenario): supersession chains formed correctly on the fixture (Oslo→Bergen, line chef→quit), unicode and tool messages ingested cleanly. Observed extraction gaps to revisit: facts *adjacent* to a superseded one stay active ("5 years as a line chef", "Oslo rent is burdensome" survive the job change and the move) — reconciliation only considers memories related to a new candidate, so stale neighbors are untouched.
+
+**Next:** Hybrid retrieval core (pgvector cosine + Postgres FTS + RRF) wired into `/search`, then `/recall` with query decomposition for multi-hop, rerank, and budgeted context assembly. Re-run eval after each step.
+
 ## v1 — LLM extraction with two-phase reconciliation
 
 **What changed:** `/turns` now runs a synchronous extraction pipeline: (1) gpt-4o-mini extracts typed memory candidates (strict JSON schema, temp 0) using the last 12 session messages as coreference context; (2) candidates and messages are embedded in one batch (text-embedding-3-small); (3) for each candidate, related active memories are fetched by `key match ∪ cosine distance < 0.55`; (4) a second LLM call reconciles conflicts into explicit operations: `add` / `reinforce` / `supersede` / `merge` (merge synthesizes opinion arcs); (5) everything is applied in one transaction before 201 is returned.

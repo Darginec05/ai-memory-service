@@ -1,0 +1,63 @@
+{
+  "name": "multi-hop",
+  "description": "Facts about a third person (the user's sister) are spread across two sessions. Probes require connecting 'sister is named Maren' + 'Maren lives in Lisbon' + 'Maren is a marine biologist' — naive top-k on the probe query alone tends to miss the join.",
+  "turns": [
+    {
+      "session_id": "eval-mh-s1",
+      "user_id": "eval-u-archer",
+      "timestamp": "2026-05-01T10:00:00Z",
+      "messages": [
+        { "role": "user", "content": "Big news in the family — my sister Maren just moved to Lisbon last week." },
+        { "role": "assistant", "content": "That's exciting! Lisbon is a wonderful city. Is she settling in well?" }
+      ]
+    },
+    {
+      "session_id": "eval-mh-s1",
+      "user_id": "eval-u-archer",
+      "timestamp": "2026-05-01T10:05:00Z",
+      "messages": [
+        { "role": "user", "content": "Yeah, she's thrilled. I'm a bit jealous honestly — I'm stuck here rehearsing, I play cello in an amateur orchestra and we have a concert coming up." },
+        { "role": "assistant", "content": "A concert sounds like a great reason to stay put! What are you performing?" }
+      ]
+    },
+    {
+      "session_id": "eval-mh-s2",
+      "user_id": "eval-u-archer",
+      "timestamp": "2026-05-20T18:30:00Z",
+      "messages": [
+        { "role": "user", "content": "Maren finally got the job she wanted — she's a marine biologist now, studying octopus behavior." },
+        { "role": "assistant", "content": "Congratulations to her! Marine biology in Lisbon sounds like a perfect match." }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "Where does the user's sister live?",
+      "session_id": "eval-mh-probe",
+      "user_id": "eval-u-archer",
+      "max_tokens": 512,
+      "expected": [["Lisbon"]]
+    },
+    {
+      "query": "What does Maren do for a living?",
+      "session_id": "eval-mh-probe",
+      "user_id": "eval-u-archer",
+      "max_tokens": 512,
+      "expected": [["marine biolog"]]
+    },
+    {
+      "query": "What city does the marine biologist the user mentioned live in?",
+      "session_id": "eval-mh-probe",
+      "user_id": "eval-u-archer",
+      "max_tokens": 512,
+      "expected": [["Lisbon"], ["Maren"]]
+    },
+    {
+      "query": "What instrument does the user play?",
+      "session_id": "eval-mh-probe",
+      "user_id": "eval-u-archer",
+      "max_tokens": 512,
+      "expected": [["cello"]]
+    }
+  ]
+}

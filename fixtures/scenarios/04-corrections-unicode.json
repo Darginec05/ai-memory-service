@@ -1,0 +1,57 @@
+{
+  "name": "corrections-unicode",
+  "description": "Russian-language conversation with emoji, a same-turn correction (wrong date corrected mid-message; only the corrected value must survive), and a Japanese sentence. Verifies unicode handling end-to-end.",
+  "turns": [
+    {
+      "session_id": "eval-cu-s1",
+      "user_id": "eval-u-dana",
+      "timestamp": "2026-06-01T10:00:00Z",
+      "messages": [
+        { "role": "user", "content": "Мою кошку зовут Жужа 🐈 — ей три года, ужасно вредная, но я её обожаю." },
+        { "role": "assistant", "content": "Жужа — отличное имя! Вредность — признак характера." }
+      ]
+    },
+    {
+      "session_id": "eval-cu-s1",
+      "user_id": "eval-u-dana",
+      "timestamp": "2026-06-01T10:05:00Z",
+      "messages": [
+        { "role": "user", "content": "Напомни мне про встречу с арендодателем 3 июля... ой, нет, перепутала — 8 июля, в среду." },
+        { "role": "assistant", "content": "Хорошо, запомнила: встреча с арендодателем 8 июля." }
+      ]
+    },
+    {
+      "session_id": "eval-cu-s2",
+      "user_id": "eval-u-dana",
+      "timestamp": "2026-06-05T15:00:00Z",
+      "messages": [
+        { "role": "user", "content": "Кстати, я недавно начала заниматься каллиграфией — 趣味は書道です, как говорят японцы. Очень успокаивает." },
+        { "role": "assistant", "content": "Каллиграфия — прекрасное хобби, и японская традиция 書道 особенно медитативна." }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "Как зовут кошку пользователя?",
+      "session_id": "eval-cu-probe",
+      "user_id": "eval-u-dana",
+      "max_tokens": 512,
+      "expected": [["Жужа"]]
+    },
+    {
+      "query": "Когда у пользователя встреча с арендодателем?",
+      "session_id": "eval-cu-probe",
+      "user_id": "eval-u-dana",
+      "max_tokens": 512,
+      "expected": [["8 июля", "июля 8", "july 8"]],
+      "forbidden": ["3 июля", "july 3"]
+    },
+    {
+      "query": "Какие хобби у пользователя?",
+      "session_id": "eval-cu-probe",
+      "user_id": "eval-u-dana",
+      "max_tokens": 512,
+      "expected": [["каллиграф", "calligraphy", "書道"]]
+    }
+  ]
+}

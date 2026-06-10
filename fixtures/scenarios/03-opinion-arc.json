@@ -1,0 +1,49 @@
+{
+  "name": "opinion-arc",
+  "description": "An opinion evolves gradually across three sessions (keto diet: enthusiasm -> friction -> nuanced compromise). The final recalled opinion should reflect the arc's endpoint, not the initial enthusiasm alone.",
+  "turns": [
+    {
+      "session_id": "eval-oa-s1",
+      "user_id": "eval-u-cole",
+      "timestamp": "2026-02-10T08:00:00Z",
+      "messages": [
+        { "role": "user", "content": "I started the keto diet three weeks ago and honestly it's amazing, I have so much energy." },
+        { "role": "assistant", "content": "Glad it's working for you! Energy improvements are commonly reported early on." }
+      ]
+    },
+    {
+      "session_id": "eval-oa-s2",
+      "user_id": "eval-u-cole",
+      "timestamp": "2026-04-05T19:00:00Z",
+      "messages": [
+        { "role": "user", "content": "Keto is getting really hard to keep up at restaurants and at friends' places. Starting to wonder if it's worth the hassle." },
+        { "role": "assistant", "content": "Social eating is the most common pain point with strict diets." }
+      ]
+    },
+    {
+      "session_id": "eval-oa-s3",
+      "user_id": "eval-u-cole",
+      "timestamp": "2026-06-01T12:00:00Z",
+      "messages": [
+        { "role": "user", "content": "I've settled on a compromise: I keep keto on weekdays but eat whatever on weekends. Works much better for me." },
+        { "role": "assistant", "content": "A sustainable middle ground often beats strict adherence." }
+      ]
+    }
+  ],
+  "probes": [
+    {
+      "query": "How does the user feel about the keto diet?",
+      "session_id": "eval-oa-probe",
+      "user_id": "eval-u-cole",
+      "max_tokens": 512,
+      "expected": [["weekday", "weekend", "compromise"]]
+    },
+    {
+      "query": "Does the user follow any diet?",
+      "session_id": "eval-oa-probe",
+      "user_id": "eval-u-cole",
+      "max_tokens": 512,
+      "expected": [["keto"]]
+    }
+  ]
+}
