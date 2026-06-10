@@ -30,11 +30,13 @@ const rerankResultSchema = z.object({
 });
 
 export class Reranker {
-  constructor(private readonly llm: LlmGateway) {}
+  constructor(private readonly llm: LlmGateway) { }
 
   // Failure degrades to the fused RRF order — worse precision, never an error.
   async rerank(question: string, candidates: ScoredItem[]): Promise<ScoredItem[]> {
     if (candidates.length === 0) return [];
+
+    console.log(`Reranker [rerank] -> buildRerankUserMessage(question, candidates)`, buildRerankUserMessage(question, candidates));
 
     try {
       const raw = await this.llm.completeStructured({

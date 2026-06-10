@@ -1,5 +1,6 @@
 import type { Context } from 'hono';
 import type { z } from 'zod';
+import { stripNullChars } from './sanitize';
 
 type ParseResult<T> = { ok: true; data: T } | { ok: false; res: Response };
 
@@ -31,5 +32,5 @@ export async function readJson<S extends z.ZodTypeAny>(
     };
   }
 
-  return { ok: true, data: parsed.data };
+  return { ok: true, data: stripNullChars(parsed.data) };
 }

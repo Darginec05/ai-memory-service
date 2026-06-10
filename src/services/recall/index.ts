@@ -50,6 +50,9 @@ export class RecallService {
     console.log(`RecallService [recall] -> candidates`, candidates);
 
     const kept = await this.reranker.rerank(query, candidates);
+
+    console.log(`RecallService [recall] -> kept`, kept);
+
     const assembled = await this.assembler.assemble(kept, maxTokens);
 
     console.log(
@@ -67,7 +70,7 @@ export class RecallService {
   }
 }
 
-function dedupeQueries(queries: string[]): string[] {
+export function dedupeQueries(queries: string[]): string[] {
   const seen = new Set<string>();
   const unique: string[] = [];
   for (const query of queries) {

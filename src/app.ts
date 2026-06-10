@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { HTTPException } from 'hono/http-exception';
 import { logger } from 'hono/logger';
 import { config } from './config';
 import { bearerAuth } from './middleware/auth';
@@ -29,6 +30,9 @@ export function createApp(): Hono {
   app.notFound((c) => c.json({ error: 'not found' }, 404));
 
   app.onError((err, c) => {
+    // Framework-raised HTTP errors (e.g. bodyLimit's 413) keep their status —
+    // collapsing them to 500 would misreport client errors as server faults.
+    if (err instanceof HTTPException) return err.getResponse();
     console.error(`[error] ${c.req.method} ${c.req.path}:`, err);
     return c.json({ error: 'internal error' }, 500);
   });

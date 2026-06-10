@@ -66,7 +66,7 @@ export class CandidateExtractor {
   }
 }
 
-function normalizeKey(raw: string): string {
+export function normalizeKey(raw: string): string {
   const key = raw.toLowerCase().trim().replace(/\s+/g, '.').slice(0, 64);
   return key || 'other';
 }

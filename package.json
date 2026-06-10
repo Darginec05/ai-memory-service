@@ -8,7 +8,10 @@
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "eval": "tsx scripts/eval.ts",
-    "test": "vitest run"
+    "test": "vitest run tests/unit tests/contract",
+    "test:unit": "vitest run tests/unit",
+    "test:contract": "vitest run tests/contract",
+    "test:persistence": "vitest run tests/persistence"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
