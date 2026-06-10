@@ -2,6 +2,16 @@
 
 One entry per significant design iteration: what changed, why, what was observed, what's next.
 
+## v2.1 — Extraction split into injectable class services
+
+**What changed:** `src/services/extraction/index.ts` (~340 lines, five responsibilities) split into class services with constructor-injected dependencies: `CandidateExtractor` (session context + LLM extraction), `RelatedMemoryFinder` (key ∪ cosine lookup), `Reconciler` (add/reinforce/supersede/merge decisions), `MemoryWriter` (transactional apply), orchestrated by `ExtractionService`; shared types and the `LlmGateway` interface live in `types.ts`. No DI framework — dependencies are wired explicitly in a composition root at the bottom of `index.ts`.
+
+**Why:** The monolith violated single-responsibility and made the upcoming unit tests awkward — reconciliation edge cases (invalid target degrades to add, undecided candidates still added) need a fake `LlmGateway`, which requires injection seams. Manual constructor injection gives the seams without framework machinery.
+
+**Result:** Behavior unchanged (typecheck clean; live turn produced the same structured memory as before the refactor). Retrieval services will follow the same pattern.
+
+**Next:** Hybrid retrieval core.
+
 ## v2 — Recall-quality fixture and self-eval baseline
 
 **What changed:** Added `fixtures/scenarios/` (5 scripted scenarios: multi-hop joins, fact evolution across sessions, gradual opinion arc, Russian/Japanese/emoji with a mid-message correction, noise + session-scoping) and `scripts/eval.ts` (`npm run eval`): cleans up, ingests via `/turns`, probes `/recall`, scores "expected fact groups found" (substring alternatives), empty-context checks for noise probes, and forbidden-term violations (hallucination/leak detection).

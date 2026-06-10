@@ -7,10 +7,11 @@
  */
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 const BASE_URL = process.env.MEMORY_EVAL_URL ?? 'http://localhost:8080';
-const FIXTURES_DIR = new URL('../fixtures/scenarios', import.meta.url).pathname;
+const FIXTURES_DIR = fileURLToPath(new URL('../fixtures/scenarios', import.meta.url));
 
 const messageSchema = z.object({
   role: z.enum(['user', 'assistant', 'tool', 'system']),
@@ -96,8 +97,14 @@ async function cleanupScenario(scenario: Scenario): Promise<void> {
     if (turn.user_id) userIds.add(turn.user_id);
     sessionIds.add(turn.session_id);
   }
-  for (const userId of userIds) await api('DELETE', `/users/${encodeURIComponent(userId)}`);
-  for (const sessionId of sessionIds) await api('DELETE', `/sessions/${encodeURIComponent(sessionId)}`);
+  for (const userId of userIds) {
+    const res = await api('DELETE', `/users/${encodeURIComponent(userId)}`);
+    if (res.status !== 204) throw new Error(`cleanup DELETE /users/${userId} -> ${res.status}`);
+  }
+  for (const sessionId of sessionIds) {
+    const res = await api('DELETE', `/sessions/${encodeURIComponent(sessionId)}`);
+    if (res.status !== 204) throw new Error(`cleanup DELETE /sessions/${sessionId} -> ${res.status}`);
+  }
 }
 
 async function ingestScenario(scenario: Scenario): Promise<void> {

@@ -5,7 +5,7 @@ import { MESSAGE_ROLES, messages, turns } from '../db/schema';
 import { readJson } from '../lib/http';
 import { asSessionId, asUserId, type MessageId, type TurnId } from '../lib/ids';
 import { LlmUnavailableError } from '../lib/openai';
-import { processTurn, type ExtractTurnInput } from '../services/extraction';
+import { extractionService, type ExtractTurnInput } from '../services/extraction';
 
 const messageSchema = z.object({
   role: z.enum(MESSAGE_ROLES),
@@ -87,7 +87,7 @@ turnsRoute.post('/turns', async (c) => {
   };
   
   try {
-    await processTurn(extractionInput);
+    await extractionService.processTurn(extractionInput);
   } catch (err) {
     if (err instanceof LlmUnavailableError) {
       console.warn(`[extraction] skipped for turn=${persisted.turnId}: ${err.message}`);

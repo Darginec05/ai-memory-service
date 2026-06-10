@@ -41,7 +41,7 @@ export async function embedTexts(texts: string[]): Promise<number[][]> {
   return res.data.map((d) => d.embedding);
 }
 
-type StructuredCallArgs = {
+export type StructuredCallArgs = {
   label: string;
   system: string;
   user: string;
