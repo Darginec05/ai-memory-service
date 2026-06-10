@@ -1,6 +1,6 @@
 # Memory Service — project guide
 
-The full task specification lives at @docs/task-assignment.md — read it before making design decisions. The HTTP contract (§3), hard problems (§4), and hard constraints (§5) are the source of truth.
+The full task specification lives at @docs/memory-service-requirements.md — read it before making design decisions. The HTTP contract (§3), hard problems (§4), and hard constraints (§5) are the source of truth.
 
 ## Changelog discipline
 
