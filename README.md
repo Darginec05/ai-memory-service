@@ -9,8 +9,6 @@ sees on its next turn.
 ```bash
 cp .env.example .env        # set OPENAI_API_KEY
 docker compose up -d
-until curl -sf http://localhost:8080/health; do sleep 1; done
-./scripts/smoke.sh          # optional: the smoke test from the task spec
 ```
 
 The service listens on **:8080**. Auth is optional: if `MEMORY_AUTH_TOKEN` is set,
