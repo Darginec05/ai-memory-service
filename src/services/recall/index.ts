@@ -45,8 +45,11 @@ export class RecallService {
     const rewrites = await this.queryRewriter.rewrite(query);
     const queries = dedupeQueries([query, ...rewrites]);
 
-    const perQuery = await Promise.all(
-      queries.map((q) => this.retrieval.search(scope, q, RECALL_CANDIDATES, RECALL_MAX_DISTANCE)),
+    const perQuery = await this.retrieval.searchMany(
+      scope,
+      queries,
+      RECALL_CANDIDATES,
+      RECALL_MAX_DISTANCE,
     );
     const candidates = this.fuseAcrossQueries(perQuery);
     log.debug('fused candidates:', candidates);

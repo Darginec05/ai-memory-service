@@ -7,6 +7,12 @@ export const COMPLETION_MODEL = 'gpt-4o-mini';
 
 const MAX_EMBED_INPUT_CHARS = 8000;
 
+// An immediate retry after a 429 is near-guaranteed to hit the same limit;
+// honor Retry-After but cap it so /recall latency stays bounded.
+const RATE_LIMIT_RETRY_CAP_MS = 2000;
+const RATE_LIMIT_RETRY_DEFAULT_MS = 1000;
+const TRANSIENT_RETRY_DELAY_MS = 500;
+
 const log = createLogger('openai');
 
 export class LlmUnavailableError extends Error {
@@ -78,12 +84,30 @@ export class OpenAiGateway implements LlmGateway {
       return result;
     } catch (err) {
       if (err instanceof LlmUnavailableError) throw err;
-      log.warn(`${label} failed, retrying once:`, err);
+      const delayMs = retryDelayMs(err);
+      log.warn(`${label} failed, retrying once in ${delayMs}ms:`, err);
+      await sleep(delayMs);
       const result = await fn();
       log.debug(`${label} took=${Date.now() - startedAt}ms (after retry)`);
       return result;
     }
   }
+}
+
+function retryDelayMs(err: unknown): number {
+  if (err instanceof OpenAI.APIError && err.status === 429) {
+    const retryAfterSec = Number(err.headers?.get('retry-after'));
+    const ms =
+      Number.isFinite(retryAfterSec) && retryAfterSec > 0
+        ? retryAfterSec * 1000
+        : RATE_LIMIT_RETRY_DEFAULT_MS;
+    return Math.min(ms, RATE_LIMIT_RETRY_CAP_MS);
+  }
+  return TRANSIENT_RETRY_DELAY_MS;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export const openAiGateway: LlmGateway = new OpenAiGateway(config.openaiApiKey);

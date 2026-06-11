@@ -92,6 +92,16 @@ a harder restart story. Hybrid retrieval needs exact keyword matching anyway, an
 Postgres FTS + pgvector in one engine means one query path, one transaction
 boundary, one volume.
 
+**A scale caveat worth naming:** the vector queries combine `ORDER BY embedding
+<=> $q` (served by the HNSW index) with a `WHERE` distance cutoff, and pgvector
+applies that cutoff as a *post-filter* over the `ef_search` candidates the index
+returns. At large scale a strict cutoff can therefore *undershoot* — the index
+hands back its candidate set, the filter discards most of it, and you get fewer
+rows than `LIMIT` even though matching rows exist deeper in the graph (pgvector
+0.8's iterative index scans exist precisely for this). Our cutoffs are loose
+(0.6/0.73) and corpora are per-user, so this doesn't bite here; at real scale the
+knobs are `hnsw.ef_search`, iterative scans, or moving the cutoff after fusion.
+
 ## 3. Extraction pipeline
 
 Extraction runs on every `POST /turns`, in three stages
@@ -228,13 +238,20 @@ head row. Scenario `03-opinion-arc.json` in the fixture exercises exactly this.
 
 **Optimized for:** recall quality and synchronous correctness. Costs accepted:
 LLM latency on the write path (a few seconds per turn, well inside the 60 s
-budget) and two LLM calls on the read path (~1–2 s per `/recall`).
+budget) and two LLM calls on the read path.
 
-**Quality over latency on /recall.** Rewrite + rerank are the difference between
+**Quality over latency on /recall.** Measured over the fixture eval's probes
+(17 calls): p50 ≈ 1.7 s, p95 ≈ 2.0 s, min 0.8 s. The breakdown is lopsided —
+the entire retrieval stage (one batched embeddings call for all query variants
+plus up to 16 parallel DB queries and fusion) runs in ~0.2 s; the other ~1.5 s
+is the two *inherently sequential* LLM calls: rewrite must finish before
+retrieval, rerank starts after it. Rewrite + rerank are the difference between
 vanilla cosine-top-k and a pipeline that survives interrogative/declarative
 mismatch and noise queries (self-eval went 88% → 100% when they landed — see
-CHANGELOG v4). If p99 mattered more, both stages degrade independently and could
-be feature-flagged off.
+CHANGELOG v4), so the ~1.5 s buys the primary eval signal. If p95 mattered
+more, the optimization order would be: a smaller/faster rerank model, then
+speculative retrieval on the raw query in parallel with rewriting, then
+feature-flagging rewrite off — both LLM stages already degrade independently.
 
 **A deliberately rejected idea: the entity-mismatch rerank rule.** A test showed
 that asking about "Java" for a user who only discussed TypeScript returned
@@ -261,6 +278,16 @@ user across all sessions — that is what makes memory useful on session 2. When
 it. The two scopes never mix: scoping lives in one module (`retrieval/scope.ts`)
 shared by the vector and FTS branches so they cannot drift apart, and the
 concurrency contract tests assert no bleed in both directions.
+
+One consequence: in a *mixed-identity* session — some turns ingested with
+`user_id: null`, later ones with a `user_id` — the anonymous memories stay
+session-scoped and are invisible to user-scoped recall, even within the same
+session. Consistent, but worth knowing. The production fix would be
+re-attribution at identification time (when an anonymous session gains a
+`user_id`, re-own its session-scoped memories once, in one `UPDATE`), not
+query-time scope widening — a one-time write beats a permanent tax on every
+read, and it keeps the one-scope-one-predicate invariant that guards against
+cross-session bleed.
 
 **Known limitations:** superseded neighbors may briefly survive if extraction
 phrasing jitters (same fact, different key — the related-finder may miss it);

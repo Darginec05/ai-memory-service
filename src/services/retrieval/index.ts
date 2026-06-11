@@ -28,9 +28,42 @@ export class RetrievalService {
     limit: number,
     maxDistance: number = DEFAULT_MAX_DISTANCE,
   ): Promise<ScoredItem[]> {
-    const startedAt = Date.now();
-    const queryEmbedding = await this.embedQuery(query);
+    const [results] = await this.searchMany(scope, [query], limit, maxDistance);
+    return results ?? [];
+  }
 
+  // One ranking per query: callers fanning out over query variants (the /recall
+  // rewriter) get all embeddings from a single embeddings API call instead of
+  // one HTTP roundtrip per variant.
+  async searchMany(
+    scope: RetrievalScope,
+    queries: string[],
+    limit: number,
+    maxDistance: number = DEFAULT_MAX_DISTANCE,
+  ): Promise<ScoredItem[][]> {
+    const startedAt = Date.now();
+    const embeddings = await this.embedQueries(queries);
+
+    const perQuery = await Promise.all(
+      queries.map((query, i) =>
+        this.searchOne(scope, query, embeddings[i] ?? null, limit, maxDistance),
+      ),
+    );
+
+    const embedded = embeddings.some((e) => e !== null);
+    log.info(
+      `scope=${scope.kind} queries=${queries.length} fused=${perQuery.map((r) => r.length).join('/')} embedded=${embedded} took=${Date.now() - startedAt}ms`,
+    );
+    return perQuery;
+  }
+
+  private async searchOne(
+    scope: RetrievalScope,
+    query: string,
+    queryEmbedding: number[] | null,
+    limit: number,
+    maxDistance: number,
+  ): Promise<ScoredItem[]> {
     const branches: Array<Promise<RetrievedItem[]>> = [
       this.ftsSearcher.searchMemories(scope, query, CANDIDATES_PER_BRANCH),
       this.ftsSearcher.searchMessages(scope, query, CANDIDATES_PER_BRANCH),
@@ -50,23 +83,18 @@ export class RetrievalService {
     const fused = rrfFuse(rankings).slice(0, limit);
     log.debug('fused:', fused);
 
-    const results = normalizeScores(fused);
-
-    log.info(
-      `scope=${scope.kind} branches=${rankings.length} fused=${results.length} embedded=${queryEmbedding !== null} took=${Date.now() - startedAt}ms`,
-    );
-    return results;
+    return normalizeScores(fused);
   }
 
   // Embedding failure degrades to FTS-only search instead of a 5xx: exact-token
   // matching still answers many queries, and /recall must never error.
-  private async embedQuery(query: string): Promise<number[] | null> {
+  private async embedQueries(queries: string[]): Promise<Array<number[] | null>> {
     try {
-      const embeddings = await this.llm.embedTexts([query]);
-      return embeddings[0] ?? null;
+      const embeddings = await this.llm.embedTexts(queries);
+      return queries.map((_, i) => embeddings[i] ?? null);
     } catch (err) {
       log.warn('query embedding failed, falling back to FTS only:', err);
-      return null;
+      return queries.map(() => null);
     }
   }
 }
