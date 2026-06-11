@@ -26,6 +26,8 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       MEMORY_AUTH_TOKEN: ${MEMORY_AUTH_TOKEN:-}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      COMPLETION_MODEL: ${COMPLETION_MODEL:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-}
     depends_on:
       db:
         condition: service_healthy

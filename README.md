@@ -7,7 +7,7 @@ sees on its next turn.
 ## Quick start
 
 ```bash
-cp .env.example .env        # set OPENAI_API_KEY
+cp .env.example .env        # set OPENAI_API_KEY (required), EMBEDDING_MODEL (optional), COMPLETION_MODEL (optional)
 docker compose up -d
 ```
 
@@ -349,5 +349,7 @@ npm run eval                 # recall-quality fixture (see below)
   performs indistinguishably from larger models at a fraction of the latency.
 - `text-embedding-3-small` (1536 dims) — memory, message, and query embeddings.
 
-Swapping providers means implementing the one-interface `LlmGateway`
-(`completeStructured` + `embedTexts`).
+Both are overridable without code changes via the optional `COMPLETION_MODEL` and
+`EMBEDDING_MODEL` env vars (see `.env.example`); unset, they fall back to the
+defaults above. Swapping providers entirely means implementing the one-interface
+`LlmGateway` (`completeStructured` + `embedTexts`).

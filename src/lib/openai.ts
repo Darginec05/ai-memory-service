@@ -2,9 +2,6 @@ import OpenAI from 'openai';
 import { config } from '../config';
 import { createLogger } from './logger';
 
-export const EMBEDDING_MODEL = 'text-embedding-3-small';
-export const COMPLETION_MODEL = 'gpt-4o-mini';
-
 const MAX_EMBED_INPUT_CHARS = 8000;
 
 // An immediate retry after a 429 is near-guaranteed to hit the same limit;
@@ -38,14 +35,18 @@ export interface LlmGateway {
 export class OpenAiGateway implements LlmGateway {
   private client: OpenAI | null = null;
 
-  constructor(private readonly apiKey: string) {}
+  constructor(
+    private readonly apiKey: string,
+    private readonly embeddingModel: string,
+    private readonly completionModel: string,
+  ) {}
 
   async embedTexts(texts: string[]): Promise<number[][]> {
     if (texts.length === 0) return [];
     // The embeddings API rejects empty strings; a single space keeps array positions aligned.
     const input = texts.map((t) => t.slice(0, MAX_EMBED_INPUT_CHARS) || ' ');
     const res = await this.withRetry('embeddings', () =>
-      this.getClient().embeddings.create({ model: EMBEDDING_MODEL, input }),
+      this.getClient().embeddings.create({ model: this.embeddingModel, input }),
     );
     return res.data.map((d) => d.embedding);
   }
@@ -53,7 +54,7 @@ export class OpenAiGateway implements LlmGateway {
   async completeStructured(args: StructuredCallArgs): Promise<unknown> {
     const res = await this.withRetry(args.label, () =>
       this.getClient().chat.completions.create({
-        model: COMPLETION_MODEL,
+        model: this.completionModel,
         temperature: 0,
         messages: [
           { role: 'system', content: args.system },
@@ -110,4 +111,8 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export const openAiGateway: LlmGateway = new OpenAiGateway(config.openaiApiKey);
+export const openAiGateway: LlmGateway = new OpenAiGateway(
+  config.openaiApiKey,
+  config.embeddingModel,
+  config.completionModel,
+);
