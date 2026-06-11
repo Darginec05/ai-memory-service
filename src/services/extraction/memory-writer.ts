@@ -12,6 +12,7 @@ import {
 const log = createLogger('extraction');
 
 type MergeOp = Extract<MemoryOp, { kind: 'merge' }>;
+type MessageRef = ExtractTurnInput['messages'][number];
 
 export class MemoryWriter {
   constructor(
@@ -19,21 +20,27 @@ export class MemoryWriter {
     private readonly llm: LlmGateway,
   ) {}
 
-  async write(
-    input: ExtractTurnInput,
+  // Message embeddings are persisted on their own so a downstream extraction or
+  // reconciliation failure can never leave a turn's messages permanently
+  // unvectorized (FTS-only) — they have no dependency on the memory ops.
+  async writeMessageEmbeddings(
+    messageRefs: readonly MessageRef[],
     messageEmbeddings: number[][],
-    ops: MemoryOp[],
   ): Promise<void> {
-    const mergedEmbeddingByOp = await this.embedMergedValues(ops);
-
     await this.db.transaction(async (tx) => {
-      for (let i = 0; i < input.messages.length; i++) {
-        const message = input.messages[i];
+      for (let i = 0; i < messageRefs.length; i++) {
+        const message = messageRefs[i];
         const embedding = messageEmbeddings[i];
         if (!message || !embedding) continue;
         await tx.update(messages).set({ embedding }).where(eq(messages.id, message.id));
       }
+    });
+  }
 
+  async writeMemories(input: ExtractTurnInput, ops: MemoryOp[]): Promise<void> {
+    const mergedEmbeddingByOp = await this.embedMergedValues(ops);
+
+    await this.db.transaction(async (tx) => {
       const now = new Date();
 
       for (const op of ops) {

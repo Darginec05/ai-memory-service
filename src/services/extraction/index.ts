@@ -44,6 +44,10 @@ export class ExtractionService {
     const messageEmbeddings = allEmbeddings.slice(0, messageTexts.length);
     const candidateEmbeddings = allEmbeddings.slice(messageTexts.length);
 
+    // Commit message embeddings before the LLM reconcile step: they are
+    // independent of the memory ops, so a reconcile failure must not strand them.
+    await this.memoryWriter.writeMessageEmbeddings(input.messages, messageEmbeddings);
+
     const relatedPerCandidate = await Promise.all(
       candidates.map((cand, i): Promise<RelatedMemory[]> => {
         const embedding = candidateEmbeddings[i];
@@ -54,7 +58,7 @@ export class ExtractionService {
 
     const ops = await this.reconciler.reconcile(candidates, candidateEmbeddings, relatedPerCandidate);
 
-    await this.memoryWriter.write(input, messageEmbeddings, ops);
+    await this.memoryWriter.writeMemories(input, ops);
 
     log.info(
       `turn=${input.turnId} candidates=${candidates.length} took=${Date.now() - startedAt}ms ops:`,

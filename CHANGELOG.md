@@ -2,19 +2,21 @@
 
 One entry per significant design iteration: what changed, why, what was observed.
 
-## v6 — Batched variant embeddings, 429 backoff, measured /recall latency
+## v6 — Batched embeddings, 429 backoff, measured latency, message-embedding durability
 
 **What changed:** 
   - Query-variant embeddings are batched: `RetrievalService.searchMany(scope, queries[])` embeds all rewrite variants in a single embeddings API call instead of one parallel call per variant; `search()` delegates to it for the single-query case, and the embed-failure → FTS-only degradation stays in one place. 
   - `withRetry` no longer retries instantly: on 429 it honors `Retry-After` capped at 2 s (default 1 s), on other transient errors waits 500 ms — an immediate retry after a rate limit is near-guaranteed to hit the same limit. 
   - `OpenAiGateway` became a class implementing `LlmGateway` (explicit `apiKey` constructor dependency, lazy client and retry as private members) — it was the one adapter breaking the codebase's class-services-with-DI pattern. 
   - Auth middleware unit tests: token unset → open, token set → 401/200, `/health` stays public. 
-  - README: measured latency, HNSW post-filter caveat, mixed-identity scoping note.
+  - Message-embedding writes split out of the memory-ops transaction (`MemoryWriter.writeMessageEmbeddings` / `writeMemories`) and committed before reconcile — a reconcile/extraction failure no longer strands a turn's messages as permanently unvectorized (FTS-only). Only a full embeddings-API outage now leaves messages without vectors.
+  - README: measured latency, HNSW post-filter caveat, mixed-identity scoping note, the message-embedding durability path in failure modes.
 
-**Why:** External review raised five points — three accepted, two defended as deliberate design.
+**Why:** Review raised five points on `/recall` plus a separate `/turns` review — accepted four, defended two as deliberate design.
   - Accepted: per-variant embedding calls wasted connections and rate-limit headroom (wall-clock unchanged — they were already parallel).
   - Accepted: a single instant retry can't survive a real 429.
   - Accepted: latency claims were estimates, not measurements.
+  - Accepted (`/turns` review): a reconcile failure left a turn's message embeddings stranded as NULL forever — they belong in their own transaction, since they don't depend on the memory ops.
   - Defended: an empty context after a *confident* rerank verdict is the noise-resistance tradeoff — degradation on rerank *failure* already falls back to fused order; a top-1 fallback on success would feed hallucinated recall to a frozen LLM.
   - Defended: user-scoped recall ignoring same-session anonymous memories keeps the one-scope-one-predicate invariant — the production fix is re-attribution at identification time (one `UPDATE` when a session gains a `user_id`), not query-time scope widening.
 

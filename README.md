@@ -300,6 +300,7 @@ arcs compress as described above.
 |---|---|
 | Cold session / unknown topic | `200 {"context": "", "citations": []}` |
 | `OPENAI_API_KEY` missing or OpenAI down during `/turns` | turn and messages are persisted, extraction is skipped with a warning, still `201` — raw log is never lost, memories for that turn are simply absent |
+| Reconciliation/extraction fails *after* embeddings are computed | message embeddings are committed in their own transaction before reconcile, so the messages stay vector-searchable even when the memory ops never land (only a full embeddings-API outage leaves them FTS-only) |
 | Query embedding fails during `/recall` or `/search` | FTS-only retrieval (exact-token match still answers many queries) |
 | Query rewrite fails | raw query only |
 | Rerank fails | fused RRF order passes through unranked |
