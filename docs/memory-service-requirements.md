@@ -331,9 +331,9 @@ To verify your service is compatible with our eval harness before you submit, we
 
 ```
 # after docker compose up
-curl-s http://localhost:8080/health | jq .
+curl -s http://localhost:8080/health | jq .
 
-curl-X POST http://localhost:8080/turns \
+curl -X POST http://localhost:8080/turns \
 -H'Content-Type: application/json' \
 -d'{
     "session_id": "smoke-1",
@@ -346,7 +346,7 @@ curl-X POST http://localhost:8080/turns \
     "metadata": {}
   }'
 
-curl-X POST http://localhost:8080/recall \
+curl -X POST http://localhost:8080/recall \
 -H'Content-Type: application/json' \
 -d'{
     "query": "Where does this user live?",
